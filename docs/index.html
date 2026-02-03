@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ardmore Meal Planner</title>
+    <style>
+        :root {
+            --primary: #2c7a3f; /* Aldi Greenish */
+            --secondary: #e67e22; /* Carrot/Sweet Potato */
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #333;
+            --accent: #2c3e50;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        h3 {
+            color: var(--accent);
+            margin-top: 1.2rem;
+        }
+        h4 {
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+        nav {
+            background: var(--accent);
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 0.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: #ccc;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.3s;
+            font-weight: bold;
+        }
+
+        nav button.active {
+            color: white;
+            border-bottom: 3px solid var(--secondary);
+        }
+
+        main {
+            padding: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 4rem;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .alert-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .recipe-split {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .split-col {
+            flex: 1;
+            min-width: 250px;
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+
+        .paleo-tag {
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .vegan-tag {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        ul.checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul.checklist li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        ul.checklist li input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        ul.checklist li.checked {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .price-tag {
+            float: right;
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-toggle {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .hidden-content {
+            display: none;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-top: none;
+            background: #fff;
+        }
+
+        .store-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .aldi { background: #e5f6ff; color: #004e7f; border: 1px solid #004e7f; }
+        .alb { background: #e8f0fe; color: #1967d2; border: 1px solid #1967d2; }
+        .walmart { background: #fff4ce; color: #8a5a00; border: 1px solid #8a5a00; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Ardmore Meal Planner</h1>
+    <div style="font-size: 0.9rem; opacity: 0.9;">73401 | Paleo &amp; Vegan Hybrid</div>
+</header>
+
+<nav>
+    <button type="button" onclick="showSection('tonight')" class="active" id="nav-tonight">Tonight</button>
+    <button type="button" onclick="showSection('harvest')" id="nav-harvest">Harvest Bowl</button>
+    <button type="button" onclick="showSection('plan')" id="nav-plan">4-Week Plan</button>
+    <button type="button" onclick="showSection('snacks')" id="nav-snacks">Snacks</button>
+    <button type="button" onclick="showSection('shopping')" id="nav-shopping">Shopping</button>
+</nav>
+
+<main>
+
+    <!-- TONIGHT SECTION -->
+    <div id="tonight" class="section active">
+        <div class="alert-box">
+            <strong>Immediate Action:</strong> Taste of India (Ardmore) Ordering Guide
+        </div>
+
+        <div class="card">
+            <h3>Recommended Order Strategy</h3>
+            <p>Focus on Tandoori (Dry heat/Grilled) and Tomato/Onion bases. Avoid "Korma" or "Makhani" (Cream/Butter) to save calories.</p>
+
+            <h4>For the Meat Eater (Paleo-ish)</h4>
+            <ul>
+                <li><strong>Order:</strong> Tandoori Chicken (Half or Full)</li>
+                <li><strong>Why:</strong> Grilled, high protein, no heavy sauce.</li>
+                <li><strong>Stats:</strong> ~400-500 cals, 50g Protein.</li>
+                <li><strong>Side:</strong> Baingan Bharta (Roasted Eggplant) - ask for minimal oil.</li>
+            </ul>
+
+            <h4>For the Vegan</h4>
+            <ul>
+                <li><strong>Order:</strong> Chana Masala or Bhindi Masala (Okra)</li>
+                <li><strong>Request:</strong> "Dairy-free/No Ghee" (usually cooked with oil, but verify).</li>
+                <li><strong>Side:</strong> Tarka Dal (Yellow Lentils).</li>
+                <li><strong>Carb:</strong> Roti (Whole wheat) instead of Naan (Naan usually has egg/milk).</li>
+            </ul>
+
+            <h4>Shared Portion Control</h4>
+            <ul>
+                <li><strong>Rice:</strong> Skip the full bowl of rice. Measure out 1/2 cup each.</li>
+                <li><strong>Appetizers:</strong> Skip samosas (deep fried). If hungry, ask for Kachumber Salad (cucumber/onion/tomato).</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- HARVEST BOWL SECTION -->
+    <div id="harvest" class="section">
+        <div class="card">
+            <h2>Sweetgreen Harvest Bowl Recreation</h2>
+            <p><em>The "Sunday Prep" Staple. Ingredients sourced from Aldi Ardmore.</em></p>
+
+            <h3>Shopping List (Aldi)</h3>
+            <ul class="checklist">
+                <li><span class="store-badge aldi">Aldi</span> Simply Nature Organic Kale or Mixed Greens</li>
+                <li><span class="store-badge aldi">Aldi</span> Sweet Potatoes (Bag)</li>
+                <li><span class="store-badge aldi">Aldi</span> Never Any! Chicken Thighs (Paleo)</li>
+                <li><span class="store-badge aldi">Aldi</span> Firm Tofu or Chickpeas (Vegan)</li>
+                <li><span class="store-badge aldi">Aldi</span> Specially Selected Wild Rice or Quinoa</li>
+                <li><span class="store-badge aldi">Aldi</span> Honeycrisp or Gala Apples</li>
+                <li><span class="store-badge aldi">Aldi</span> Goat Cheese Crumbles (Paleoish) / Avocado (Vegan)</li>
+                <li><span class="store-badge aldi">Aldi</span> Sliced Almonds</li>
+                <li><span class="store-badge aldi">Aldi</span> Balsamic Vinegar + Olive Oil</li>
+            </ul>
+
+            <h3>The "Wolf" Chili Drizzle (DIY)</h3>
+            <div class="recipe-split">
+                <div class="split-col" style="background: #fff0e6;">
+                    <strong>DIY Chili Crisp</strong><br>
+                    1. Heat 1/2 cup neutral oil (Avocado oil from Aldi) in a pan.<br>
+                    2. Add 5 cloves minced garlic + 1 shallot (minced). Fry until golden.<br>
+                    3. Pour hot oil over bowl containing: 3 tbsp Red Pepper Flakes, 1 tbsp Soy Sauce (or Tamari), 1 tsp Sugar/Honey.<br>
+                    4. Let cool. Put on <em>everything</em>.
+                </div>
+            </div>
+
+            <h3>Assembly Guide</h3>
+            <ul>
+                <li><strong>Base:</strong> Massaged Kale (rub kale with drop of olive oil to soften).</li>
+                <li><strong>Grain:</strong> 1/2 Cup Wild Rice.</li>
+                <li><strong>Roasted Veg:</strong> Sweet potatoes (cubed, roasted 400°F for 25 mins).</li>
+                <li><strong>Crunch:</strong> Diced apples + Almonds.</li>
+                <li><strong>Finish:</strong> Balsamic Vinaigrette + Chili Drizzle.</li>
+            </ul>
+        </div>
+
+        <!-- GUACAMOLE & GREENS -->
+        <div class="card">
+            <h2>Guacamole & Greens</h2>
+            <p><em>The Tex-Mex powerhouse with fresh guac and lime-cilantro dressing</em></p>
+
+            <h3>Shopping List (Aldi)</h3>
+            <ul class="checklist">
+                <li><span class="store-badge aldi">Aldi</span> Romaine Hearts + Baby Arugula Mix</li>
+                <li><span class="store-badge aldi">Aldi</span> Never Any! Chicken Thighs</li>
+                <li><span class="store-badge aldi">Aldi</span> Avocados (3-4 for fresh guacamole)</li>
+                <li><span class="store-badge aldi">Aldi</span> Cherry Tomatoes</li>
+                <li><span class="store-badge aldi">Aldi</span> Red Onion</li>
+                <li><span class="store-badge aldi">Aldi</span> Jalapeños (2)</li>
+                <li><span class="store-badge aldi">Aldi</span> Fresh Cilantro Bunch</li>
+                <li><span class="store-badge aldi">Aldi</span> Limes (3-4)</li>
+                <li><span class="store-badge aldi">Aldi</span> Tortilla Chips (Clancy's)</li>
+            </ul>
+
+            <h3>Lime Cilantro Jalapeño Vinaigrette</h3>
+            <div class="recipe-split">
+                <div class="split-col" style="background: #e8f5e9;">
+                    <strong>Ingredients:</strong><br>
+                    • 1 cup fresh cilantro<br>
+                    • 1 jalapeño (seeded for mild)<br>
+                    • Juice of 2 limes<br>
+                    • 1/3 cup olive oil<br>
+                    • 1 garlic clove<br>
+                    • Salt to taste<br>
+                    <em>Blend all until smooth</em>
+                </div>
+            </div>
+
+            <h3>Assembly</h3>
+            <ul>
+                <li><strong>Base:</strong> 50/50 Romaine + Arugula</li>
+                <li><strong>Protein:</strong> Grilled chicken with cumin &amp; paprika (or marinated tofu)</li>
+                <li><strong>Fresh Guac:</strong> Mash 2 avocados + lime juice + salt + diced jalapeño</li>
+                <li><strong>Toppings:</strong> Cherry tomatoes, red onion, crushed tortilla chips</li>
+                <li><strong>Dress:</strong> Lime cilantro vinaigrette (generous!)</li>
+            </ul>
+        </div>
+
+        <!-- GARDEN COBB -->
+        <div class="card">
+            <h2>Garden Cobb Salad</h2>
+            <p><em>The protein-packed classic with crispy chicken and blue cheese</em></p>
+
+            <h3>Shopping List (Aldi)</h3>
+            <ul class="checklist">
+                <li><span class="store-badge aldi">Aldi</span> Mixed Greens or Romaine</li>
+                <li><span class="store-badge aldi">Aldi</span> Never Any! Chicken Breast</li>
+                <li><span class="store-badge aldi">Aldi</span> Goldhen Eggs (4)</li>
+                <li><span class="store-badge aldi">Aldi</span> Never Any! Turkey Bacon</li>
+                <li><span class="store-badge aldi">Aldi</span> Grape Tomatoes</li>
+                <li><span class="store-badge aldi">Aldi</span> Avocado</li>
+                <li><span class="store-badge aldi">Aldi</span> Blue Cheese Crumbles</li>
+                <li><span class="store-badge aldi">Aldi</span> Red Wine Vinegar</li>
+                <li><span class="store-badge walmart">Walmart</span> Dijon Mustard (if not at Aldi)</li>
+            </ul>
+
+            <h3>Green Goddess Dressing (DIY Version)</h3>
+            <div class="recipe-split">
+                <div class="split-col" style="background: #f0f4c3;">
+                    <strong>Ingredients:</strong><br>
+                    • 1/2 cup Greek yogurt (or cashew cream)<br>
+                    • 1/4 cup fresh basil<br>
+                    • 2 tbsp fresh chives<br>
+                    • Juice of 1 lemon<br>
+                    • 1 garlic clove<br>
+                    • Salt &amp; pepper<br>
+                    <em>Blend until creamy</em>
+                </div>
+            </div>
+
+            <h3>Assembly</h3>
+            <ul>
+                <li><strong>Base:</strong> Chopped romaine</li>
+                <li><strong>Arrange in rows:</strong> Grilled chicken strips, hard-boiled egg quarters, crumbled bacon</li>
+                <li><strong>Add:</strong> Cherry tomatoes, avocado slices, blue cheese</li>
+                <li><strong>Dress:</strong> Green goddess or balsamic vinaigrette</li>
+            </ul>
+        </div>
+
+        <!-- SHROOMAMI -->
+        <div class="card">
+            <h2>Shroomami Bowl</h2>
+            <p><em>The umami-rich mushroom bowl with toasted sesame</em></p>
+
+            <h3>Shopping List (Aldi)</h3>
+            <ul class="checklist">
+                <li><span class="store-badge aldi">Aldi</span> Baby Spinach &amp; Arugula Mix</li>
+                <li><span class="store-badge aldi">Aldi</span> Mushroom Medley (or Baby Bella + Shiitake)</li>
+                <li><span class="store-badge aldi">Aldi</span> Extra Firm Tofu</li>
+                <li><span class="store-badge aldi">Aldi</span> Quinoa or Wild Rice</li>
+                <li><span class="store-badge aldi">Aldi</span> Cucumber</li>
+                <li><span class="store-badge aldi">Aldi</span> Shredded Carrots</li>
+                <li><span class="store-badge aldi">Aldi</span> Sesame Seeds</li>
+                <li><span class="store-badge walmart">Walmart</span> Miso Paste (for dressing)</li>
+                <li><span class="store-badge walmart">Walmart</span> Rice Wine Vinegar</li>
+            </ul>
+
+            <h3>Miso Sesame Ginger Dressing</h3>
+            <div class="recipe-split">
+                <div class="split-col" style="background: #fff3e0;">
+                    <strong>Ingredients:</strong><br>
+                    • 2 tbsp white miso paste<br>
+                    • 1 tbsp sesame oil<br>
+                    • 1 tbsp rice wine vinegar<br>
+                    • 1 tsp fresh ginger (grated)<br>
+                    • 1 tsp maple syrup<br>
+                    • 2 tbsp water<br>
+                    <em>Whisk until smooth</em>
+                </div>
+            </div>
+
+            <h3>Assembly</h3>
+            <ul>
+                <li><strong>Base:</strong> Warm quinoa + fresh spinach/arugula</li>
+                <li><strong>Star:</strong> Roasted mushroom mix (400°F, 20 mins with soy sauce glaze)</li>
+                <li><strong>Protein:</strong> Crispy tofu cubes (press, cube, pan-fry)</li>
+                <li><strong>Crunch:</strong> Cucumber ribbons, shredded carrots</li>
+                <li><strong>Finish:</strong> Miso dressing + toasted sesame seeds</li>
+            </ul>
+        </div>
+
+        <!-- CRISPY CHICKEN PLATE -->
+        <div class="card">
+            <h2>Crispy Chicken Plate</h2>
+            <p><em>The comfort food bowl with tangy hot honey mustard</em></p>
+
+            <h3>Shopping List (Aldi)</h3>
+            <ul class="checklist">
+                <li><span class="store-badge aldi">Aldi</span> Never Any! Chicken Thighs</li>
+                <li><span class="store-badge aldi">Aldi</span> Arugula or Spring Mix</li>
+                <li><span class="store-badge aldi">Aldi</span> Brussels Sprouts</li>
+                <li><span class="store-badge aldi">Aldi</span> Sweet Potatoes</li>
+                <li><span class="store-badge aldi">Aldi</span> Green Cabbage (for slaw)</li>
+                <li><span class="store-badge aldi">Aldi</span> Carrots</li>
+                <li><span class="store-badge aldi">Aldi</span> Honey</li>
+                <li><span class="store-badge aldi">Aldi</span> Dijon Mustard</li>
+                <li><span class="store-badge aldi">Aldi</span> Hot Sauce (Burman's)</li>
+            </ul>
+
+            <h3>Hot Honey Mustard</h3>
+            <div class="recipe-split">
+                <div class="split-col" style="background: #ffe0b2;">
+                    <strong>Ingredients:</strong><br>
+                    • 1/4 cup Dijon mustard<br>
+                    • 2 tbsp honey<br>
+                    • 1 tbsp hot sauce<br>
+                    • 1 tbsp apple cider vinegar<br>
+                    • Pinch of cayenne<br>
+                    <em>Mix and let flavors meld</em>
+                </div>
+            </div>
+
+            <h3>Assembly</h3>
+            <ul>
+                <li><strong>Protein:</strong> Pan-fried chicken thighs (coat in almond flour for extra crispy)</li>
+                <li><strong>Roasted:</strong> Brussels sprouts + sweet potato chunks (425°F, 25 mins)</li>
+                <li><strong>Fresh:</strong> Cabbage carrot slaw (shred + lime + salt)</li>
+                <li><strong>Base:</strong> Bed of arugula</li>
+                <li><strong>Drizzle:</strong> Hot honey mustard generously</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MEAL PLAN SECTION -->
+    <div id="plan" class="section">
+        <h2>4-Week Overview</h2>
+        <p>Click weeks to expand details.</p>
+
+        <!-- WEEK 1 -->
+        <button type="button" class="btn-toggle" onclick="toggleWeek('week1')">Week 1: Harvest Bowls &amp; Sheet Pans</button>
+        <div id="week1" class="hidden-content">
+            <h3>Shopping Focus: Aldi</h3>
+            <p><strong>Est. Cost:</strong> $65-$80</p>
+            <ul>
+                <li>Proteins: Chicken Thighs, Tofu, Eggs (Goldhen Free Range)</li>
+                <li>Veg: Kale, Sweet Potatoes, Broccoli, Brussels Sprouts</li>
+            </ul>
+            <h3>Sunday Prep (90 Mins)</h3>
+            <ul>
+                <li><strong>Oven 400°F:</strong> Roast 2 trays. Tray 1: Sweet Potatoes. Tray 2: Chicken Thighs (seasoned) &amp; Tofu cubes (separate side).</li>
+                <li><strong>Stovetop:</strong> Boil Wild Rice (20 mins). Hard boil 6 eggs for snacks.</li>
+                <li><strong>Jar:</strong> Make Balsamic Dressing &amp; Chili Drizzle.</li>
+            </ul>
+            <h3>Menu</h3>
+            <ul>
+                <li><strong>Lunch:</strong> Harvest Bowls (Prepped items).</li>
+                <li><strong>Dinner Mon/Tue:</strong> Sheet Pan Sausage (Aldi Chicken Sausage) + Peppers/Onions (Vegan: Use Beyond Sausage from Albertsons or Chickpeas).</li>
+                <li><strong>Dinner Wed/Thu:</strong> Big loaded Salad with leftover Chicken/Tofu + Goat Cheese + Pickled Onions.</li>
+            </ul>
+        </div>
+
+        <!-- WEEK 2 -->
+        <button type="button" class="btn-toggle" onclick="toggleWeek('week2')">Week 2: Taco Bowls (The Hybrid Hero)</button>
+        <div id="week2" class="hidden-content">
+            <h3>Shopping Focus: Aldi + Walmart for specific spices</h3>
+            <p><strong>Est. Cost:</strong> $60</p>
+            <ul>
+                <li>Proteins: Ground Beef (Grass fed if avail) or Turkey, Black Beans, Walnuts (for Vegan Meat)</li>
+                <li>Veg: Romaine, Tomatoes, Avocados, Limes, Cilantro, Cauliflower (Rice)</li>
+            </ul>
+            <h3>Sunday Prep (60 Mins)</h3>
+            <ul>
+                <li><strong>Skillet 1:</strong> Taco Meat (Season with cumin, chili powder, paprika).</li>
+                <li><strong>Skillet 2 (Vegan):</strong> "Walnut Meat" (Pulse walnuts + mushrooms in food processor, sauté with soy sauce and spices). Or just seasoned Black Beans.</li>
+                <li><strong>Prep:</strong> Make a big batch of Guacamole and Pico de Gallo.</li>
+            </ul>
+            <h3>Menu</h3>
+            <ul>
+                <li><strong>Lunch:</strong> Taco Salad (Greens base, meat/nut meat, salsa, guac).</li>
+                <li><strong>Dinner:</strong> Burrito Bowls (Cauliflower rice base).</li>
+                <li><strong>Vegan Swap:</strong> The Walnut/Mushroom meat is surprisingly good for Paleo eaters too!</li>
+            </ul>
+        </div>
+
+        <!-- WEEK 3 -->
+        <button type="button" class="btn-toggle" onclick="toggleWeek('week3')">Week 3: Curry &amp; Stir Fry</button>
+        <div id="week3" class="hidden-content">
+            <h3>Shopping Focus: Aldi</h3>
+            <p><strong>Est. Cost:</strong> $70</p>
+            <ul>
+                <li>Proteins: Chicken Breast, Edamame (frozen), Cashews</li>
+                <li>Pantry: Coconut Milk (Canned), Curry Paste (Red or Green - check labels for shrimp paste if strict vegan)</li>
+            </ul>
+            <h3>Sunday Prep</h3>
+            <ul>
+                <li><strong>Pot:</strong> Make a large pot of Curry Sauce (Coconut milk, curry paste, ginger, garlic). Split into two containers.</li>
+                <li><strong>Cook:</strong> Simmer Chicken in Container A. Simmer Tofu/Chickpeas in Container B.</li>
+                <li><strong>Chop:</strong> Bell peppers, snap peas (for quick stir fry dinners).</li>
+            </ul>
+            <h3>Menu</h3>
+            <ul>
+                <li><strong>Lunch:</strong> Leftover Curry over Spinach (lower carb) or Rice.</li>
+                <li><strong>Dinner:</strong> 15-Min Stir Fry. Sauté veggies, add protein (shrimp or edamame), finish with Chili Drizzle.</li>
+            </ul>
+        </div>
+
+        <!-- WEEK 4 -->
+        <button type="button" class="btn-toggle" onclick="toggleWeek('week4')">Week 4: Freezer/Pantry Clear Out</button>
+        <div id="week4" class="hidden-content">
+            <h3>Shopping Focus: Low Spend</h3>
+            <p><strong>Est. Cost:</strong> $40 (Fresh items only)</p>
+            <ul>
+                <li>Buy only fresh greens, avocados, and eggs. Use frozen meats/veggies from previous weeks.</li>
+            </ul>
+            <h3>Menu</h3>
+            <ul>
+                <li><strong>Breakfast for Dinner:</strong> Frittata (Eggs + leftover veg) for Paleo. Tofu Scramble (Tofu + turmeric + veg) for Vegan.</li>
+                <li><strong>Soup:</strong> "Everything" Soup. Broth base, frozen veggies, canned beans, leftover wild rice.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- SNACKS SECTION -->
+    <div id="snacks" class="section">
+        <h2>Aldi Grab-and-Go Snacks (Under $3)</h2>
+        <p><em>Focus on Protein &amp; Healthy Fats for the afternoon slump.</em></p>
+        <div class="recipe-split">
+            <div class="split-col">
+                <h4>Fridge</h4>
+                <ul class="checklist">
+                    <li><strong>Hard Boiled Eggs:</strong> (Goldhen) - Prep 10 on Sunday. Salt &amp; Pepper.</li>
+                    <li><strong>Guacamole Cups:</strong> (Aldi Park Street Deli) + Carrot Chips.</li>
+                    <li><strong>Hummus + Peppers:</strong> Sliced bell peppers are cheaper than chips.</li>
+                    <li><strong>String Cheese:</strong> (Happy Farms) - Quick protein.</li>
+                    <li><strong>Turkey Roll-ups:</strong> Deli turkey rolled around a pickle spear.</li>
+                </ul>
+            </div>
+            <div class="split-col">
+                <h4>Pantry</h4>
+                <ul class="checklist">
+                    <li><strong>Almonds/Walnuts:</strong> (Southern Grove) - Pre-portion into Ziplocs to avoid overeating.</li>
+                    <li><strong>Dark Chocolate:</strong> (Moser Roth 70% or 85%) - 1 bar is low sugar, high satisfaction.</li>
+                    <li><strong>Apple + PB:</strong> Classic for a reason.</li>
+                    <li><strong>Pumpkin Seeds:</strong> High magnesium, good for stress.</li>
+                    <li><strong>Rice Cakes + Avocado:</strong> Crunchy and fatty.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOPPING GUIDE SECTION -->
+    <div id="shopping" class="section">
+        <h2>Ardmore Shopping Intel</h2>
+
+        <div class="card">
+            <h3><span class="store-badge aldi">Aldi</span> N Commerce St</h3>
+            <p><strong>Best Buys:</strong></p>
+            <ul>
+                <li><strong>Organic Grass Fed Beef:</strong> Usually cheapest in town per lb.</li>
+                <li><strong>Avocados:</strong> Often on "Aldi Finds" sale for &lt;$0.60.</li>
+                <li><strong>Goat Cheese:</strong> Emporium Selection logs are half the price of other stores.</li>
+                <li><strong>Never Any! Brand:</strong> Antibiotic-free chicken/meats. Excellent value.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3><span class="store-badge alb">Albertsons</span> N Commerce St</h3>
+            <p><strong>Strategic Use:</strong></p>
+            <ul>
+                <li><strong>Vegan Specialty:</strong> Better selection of Beyond Meat/Impossible and specific vegan cheeses than Aldi.</li>
+                <li><strong>Wednesdays:</strong> New weekly ads start. Look for "For U" digital coupons on the app before going.</li>
+                <li><strong>Rotisserie Chickens:</strong> Good for emergency protein (remove skin for healthier option).</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>Walmart &amp; Amazon</h3>
+            <ul>
+                <li><strong>Walmart:</strong> Backup for produce if Aldi is out. Good for bulk rice/beans.</li>
+                <li><strong>Amazon/Whole Foods:</strong> 73401 delivery is spotty for fresh food. Use Amazon for shelf-stable specialty items: <em>Coconut Aminos, Nutritional Yeast, Specialty Hot Sauces (Son of Wolf alternatives).</em></li>
+            </ul>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+
+        document.getElementById(id).classList.add('active');
+        document.getElementById('nav-' + id).classList.add('active');
+
+        window.scrollTo(0, 0);
+    }
+
+    function toggleWeek(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.querySelectorAll('ul.checklist li').forEach(item => {
+        item.addEventListener('click', function() {
+            this.classList.toggle('checked');
+        });
+    });
+</script>
+
+</body>
+</html>
