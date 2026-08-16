@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "fleet-memory": {
+      "command": "python3",
+      "args": [
+        "claude/agents/fleet-memory/fleet_memory_mcp_server.py"
+      ],
+      "tools": [
+        "fleet_memory_fact_search",
+        "fleet_memory_fact_feedback"
+      ]
+    }
+  }
+}
